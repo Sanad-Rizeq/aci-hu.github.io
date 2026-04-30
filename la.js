@@ -3,7 +3,6 @@ class LAStation {
         this.group = new THREE.Group(); this.group.position.set(x, 0, z);
         this.uiID = 'laUI'; this.uiVisible = false; this.name = 'LA Abrasion';
         
-        // UPGRADE: Added Grading types and strict ASTM tracking
         this.state = { phase: 'idle', revs: 0, targetRevs: 500, hasAgg: false, hasSteel: false, fastMode: false, doorsOpen: true, grading: 'A (12 Spheres)' }; 
         this.osState = 'desktop'; 
         this.spheres = [];
@@ -22,7 +21,6 @@ class LAStation {
         if(this.audioCtx.state === 'suspended') this.audioCtx.resume();
         if(this.noiseNode) return;
         
-        // Generate harsh metallic grinding/clanking noise
         const bufferSize = this.audioCtx.sampleRate * 2; 
         const buffer = this.audioCtx.createBuffer(1, bufferSize, this.audioCtx.sampleRate);
         const data = buffer.getChannelData(0);
@@ -36,7 +34,7 @@ class LAStation {
         filter.type = 'bandpass'; filter.frequency.value = 1000; filter.Q.value = 1.5;
         
         const gain = this.audioCtx.createGain();
-        gain.gain.value = 0.4; // Loud, but won't blow out speakers
+        gain.gain.value = 0.4;
         
         this.noiseNode.connect(filter); filter.connect(gain); gain.connect(this.audioCtx.destination);
         this.noiseNode.start();
@@ -49,54 +47,45 @@ class LAStation {
     buildMachine() {
         this.group.add(createAntiVibrationMat(2.5, 2.5));
 
-        // GRAPHICS UPGRADE: Heavy Industrial PBR Materials
         const matBlueFrame = new THREE.MeshPhysicalMaterial({ color: 0x1e3a8a, metalness: 0.5, roughness: 0.6, clearcoat: 0.1 }); 
         const matDrumSteel = new THREE.MeshPhysicalMaterial({ color: 0x64748b, metalness: 0.9, roughness: 0.5, clearcoat: 0.2, side: THREE.DoubleSide }); 
         const matSphere = new THREE.MeshPhysicalMaterial({ color: 0xe2e8f0, metalness: 1.0, roughness: 0.1, clearcoat: 1.0 });
         const matGlass = new THREE.MeshPhysicalMaterial({ color: 0x94a3b8, transparent: true, opacity: 0.2, metalness: 0.9, roughness: 0.1, clearcoat: 1.0 });
         const matRubber = new THREE.MeshPhysicalMaterial({ color: 0x111111, roughness: 0.9 });
 
-        // Heavy Frame Enclosure
         const encBack = new THREE.Mesh(new THREE.BoxGeometry(1.6, 2.2, 0.1), matBlueFrame); encBack.position.set(0, 1.1, -0.7); encBack.castShadow = true; this.group.add(encBack);
         const encTop = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.1, 1.4), matBlueFrame); encTop.position.set(0, 2.25, 0); this.group.add(encTop);
         const encL = new THREE.Mesh(new THREE.BoxGeometry(0.1, 2.2, 1.4), matBlueFrame); encL.position.set(-0.75, 1.1, 0); encL.castShadow = true; this.group.add(encL);
         const encR = new THREE.Mesh(new THREE.BoxGeometry(0.1, 2.2, 1.4), matBlueFrame); encR.position.set(0.75, 1.1, 0); encR.castShadow = true; this.group.add(encR);
 
-        // Acoustic Safety Glass Doors
         this.doorL = new THREE.Mesh(new THREE.BoxGeometry(0.75, 2.0, 0.05), matGlass); 
         this.doorL.position.set(-0.375, 1.1, 0.7); this.doorL.geometry.translate(0.375, 0, 0); this.doorL.rotation.y = -Math.PI / 1.5; this.group.add(this.doorL);
         
         this.doorR = new THREE.Mesh(new THREE.BoxGeometry(0.75, 2.0, 0.05), matGlass); 
         this.doorR.position.set(0.375, 1.1, 0.7); this.doorR.geometry.translate(-0.375, 0, 0); this.doorR.rotation.y = Math.PI / 1.5; this.group.add(this.doorR);
 
-        // Catch Pan
         const pan = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.25, 1.0), matDrumSteel); pan.position.y = 0.125; this.group.add(pan);
         
-        // Rotating Drum Assembly
         this.drum = new THREE.Group(); this.drum.position.set(0, 1.2, 0); this.group.add(this.drum);
         
         const cylinder = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.8, 32, 1, false, 0, Math.PI * 1.7), matDrumSteel); 
         cylinder.rotation.z = Math.PI / 2; cylinder.castShadow = true; this.drum.add(cylinder);
         
-        // Internal Shelf (The part that actually drops the spheres)
         const shelf = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.05, 0.15), matDrumSteel);
         shelf.position.set(0, 0.35, 0.1); shelf.rotation.x = -Math.PI/6; this.drum.add(shelf);
 
         const drumCap1 = new THREE.Mesh(new THREE.CircleGeometry(0.45, 32), matDrumSteel); drumCap1.position.x = -0.4; drumCap1.rotation.y = -Math.PI/2; this.drum.add(drumCap1);
         const drumCap2 = new THREE.Mesh(new THREE.CircleGeometry(0.45, 32), matDrumSteel); drumCap2.position.x = 0.4; drumCap2.rotation.y = Math.PI/2; this.drum.add(drumCap2);
 
-        // Motor Assembly attached to the right side
         const motorBox = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.4, 0.4), matBlueFrame); motorBox.position.set(0.9, 1.2, 0); this.group.add(motorBox);
         const beltCover = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.6, 0.2), matRubber); beltCover.position.set(0.75, 1.2, 0); this.group.add(beltCover);
 
-        // 12 High-Gloss Steel Spheres
         for(let i=0; i<12; i++) { 
             const sphere = new THREE.Mesh(new THREE.SphereGeometry(0.045, 32, 32), matSphere); 
             sphere.visible = false; sphere.castShadow = true; this.drum.add(sphere); 
             this.spheres.push({ mesh: sphere, x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0 }); 
         }
 
-        // Monitor & Desk
         const desk = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.6), new THREE.MeshStandardMaterial({color: 0x111})); desk.position.set(1.8, 0.4, 0.7); desk.castShadow = true; this.group.add(desk);
         const canvas = document.getElementById('laMonitorCanvas'); this.ctx = canvas.getContext('2d'); this.screenTexture = new THREE.CanvasTexture(canvas);
         const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 0.6), new THREE.MeshBasicMaterial({ map: this.screenTexture })); screen.position.set(1.8, 1.15, 0.7); screen.rotation.y = -Math.PI / 4; screen.userData.isLAMonitor = true; this.group.add(screen);
@@ -125,7 +114,6 @@ class LAStation {
             this.screenTexture.needsUpdate = true; return;
         }
 
-        // SOFTWARE WINDOW
         this.ctx.fillStyle = '#0f172a'; this.ctx.fillRect(0, 0, 800, 600); 
         this.ctx.fillStyle = '#1e3a8a'; this.ctx.fillRect(0, 0, 800, 40);
         this.ctx.fillStyle = '#ffffff'; this.ctx.font = 'bold 18px Arial'; this.ctx.textAlign = 'left'; this.ctx.fillText('LOS ANGELES ABRASION MACHINE (ASTM C131)', 10, 26);
@@ -141,7 +129,6 @@ class LAStation {
             this.ctx.fillStyle = '#f59e0b'; this.ctx.font = 'bold 32px monospace'; this.ctx.textAlign='center'; 
             this.ctx.fillText('MACHINE IDLE - AWAITING LOAD', 400, 300); 
 
-            // Animated pulsing indicator
             const alpha = 0.5 + Math.sin(Date.now() / 200) * 0.5;
             this.ctx.fillStyle = `rgba(234, 179, 8, ${alpha})`;
             this.ctx.beginPath(); this.ctx.arc(400, 350, 20, 0, Math.PI*2); this.ctx.fill();
@@ -150,7 +137,6 @@ class LAStation {
             this.ctx.fillStyle = '#22c55e'; this.ctx.font = 'bold 40px monospace'; this.ctx.textAlign='center'; 
             this.ctx.fillText(`MACHINE RUNNING`, 400, 150); 
             
-            // Render Live Progress Bar
             this.ctx.fillStyle = '#0f172a'; this.ctx.fillRect(100, 250, 600, 40);
             const progress = Math.min(1.0, this.state.revs / this.state.targetRevs);
             this.ctx.fillStyle = '#22c55e'; this.ctx.fillRect(104, 254, 592 * progress, 32);
@@ -158,9 +144,9 @@ class LAStation {
             this.ctx.fillStyle = '#fff'; this.ctx.font = 'bold 24px monospace'; 
             this.ctx.fillText(`REV: ${Math.floor(this.state.revs)} / ${this.state.targetRevs}`, 400, 220); 
             
-            // RPM Dial Graphic
+            // ASTM C131: 30 to 33 RPM
             this.ctx.strokeStyle = '#334155'; this.ctx.lineWidth = 10; this.ctx.beginPath(); this.ctx.arc(400, 420, 80, Math.PI, 0); this.ctx.stroke();
-            this.ctx.strokeStyle = '#38bdf8'; this.ctx.beginPath(); this.ctx.arc(400, 420, 80, Math.PI, Math.PI + (Math.PI * 0.7)); this.ctx.stroke(); // ~33 RPM
+            this.ctx.strokeStyle = '#38bdf8'; this.ctx.beginPath(); this.ctx.arc(400, 420, 80, Math.PI, Math.PI + (Math.PI * 0.7)); this.ctx.stroke(); 
             this.ctx.fillStyle = '#e1e7ef'; this.ctx.font = '16px Arial'; this.ctx.fillText('SPEED: 33 RPM', 400, 450);
 
             if(this.state.fastMode) { 
@@ -174,7 +160,6 @@ class LAStation {
             this.ctx.fillStyle = '#e1e7ef'; this.ctx.font = '20px monospace';
             this.ctx.fillText(`Original Sample Mass (A): 5000 g`, 50, 180);
             
-            // Calculate a random but realistic loss based on typical aggregates
             const lossPct = 20 + Math.random() * 25; 
             const finalMass = 5000 * (1 - (lossPct/100));
             this.ctx.fillText(`Final Mass > 1.70mm (B):  ${finalMass.toFixed(0)} g`, 50, 230);
@@ -230,7 +215,6 @@ class LAStation {
             document.getElementById('laLoadSteelBtn').disabled = true; 
             if(this.state.hasAgg && this.state.hasSteel) document.getElementById('laRunBtn').disabled = false; 
             
-            // Show spheres in drum
             this.spheres.forEach(s => { 
                 s.mesh.visible = true; 
                 s.x = (Math.random() - 0.5) * 0.4; s.y = (Math.random() - 0.5) * 0.4; s.z = (Math.random() - 0.5) * 0.4; 
@@ -269,32 +253,28 @@ class LAStation {
 
     update(delta) {
         if (this.state.phase === 'running') {
-            const speed = this.state.fastMode ? 100.0 : 3.5; // ~30-33 RPM
-            this.drum.rotation.x -= speed * delta; // Reverse rotation to catch on the shelf
+            // ASTM C131: 30 to 33 RPM
+            const speed = this.state.fastMode ? 100.0 : 3.5; 
+            this.drum.rotation.x -= speed * delta;
             this.state.revs += (speed * delta) / (Math.PI * 2);
             
-            // Brutal Sphere Physics Engine
             this.spheres.forEach(s => {
-                s.vy -= 9.8 * delta; // Gravity
+                s.vy -= 9.8 * delta;
                 
-                // Add spin from drum wall
                 const drumWallSpeed = speed * 0.45;
                 s.x += (s.vx + drumWallSpeed * Math.cos(this.drum.rotation.x)) * delta;
                 s.y += (s.vy + drumWallSpeed * Math.sin(this.drum.rotation.x)) * delta;
                 s.z += s.vz * delta;
 
-                // Restrict to cylinder bounds
                 const dist = Math.sqrt(s.x*s.x + s.y*s.y);
                 if (dist > 0.4) { 
                     s.x = (s.x / dist) * 0.4; 
                     s.y = (s.y / dist) * 0.4; 
-                    // Violent bounce
                     s.vy = (Math.random() * 4) + 2; 
                     s.vx = (Math.random() - 0.5) * 4; 
                     s.vz = (Math.random() - 0.5) * 1.5;
                 }
                 
-                // Keep inside end caps
                 if (s.z > 0.35) { s.z = 0.35; s.vz *= -0.5; }
                 if (s.z < -0.35) { s.z = -0.35; s.vz *= -0.5; }
 
@@ -307,7 +287,6 @@ class LAStation {
                 document.getElementById('laSieveBtn').disabled = false; 
                 document.getElementById('laSpeedBtn').disabled = true;
                 
-                // Settle spheres at bottom
                 this.spheres.forEach(s => {
                     s.mesh.position.set((Math.random()-0.5)*0.2, -0.4, (Math.random()-0.5)*0.6);
                 });

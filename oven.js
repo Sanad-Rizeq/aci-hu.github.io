@@ -11,37 +11,33 @@ class OvenStation {
     buildMachine() {
         this.group.add(createAntiVibrationMat(2.0, 1.5));
 
-        // Scale & Desk
+        const steelMatGeneral = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.8, roughness: 0.2 });
+
         const deskMat = new THREE.MeshStandardMaterial({color: 0x1e293b});
         const desk = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.6), deskMat); desk.position.set(1.2, 0.4, 0.3); desk.castShadow = true; this.group.add(desk);
         
         const scaleBase = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.05, 0.4), new THREE.MeshStandardMaterial({color: 0x111111})); scaleBase.position.set(1.2, 0.825, 0.3); this.group.add(scaleBase);
         const scalePlate = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.02, 32), steelMatGeneral); scalePlate.position.set(1.2, 0.86, 0.3); this.group.add(scalePlate);
 
-        // Oven Body
         const ovenMat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, metalness: 0.6, roughness: 0.4 });
         const ovenInsideMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9, side: THREE.DoubleSide });
         
         const ovenBody = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.4, 1.0), ovenMat); ovenBody.position.set(-0.3, 0.7, 0); ovenBody.castShadow = true; this.group.add(ovenBody);
         const ovenCavity = new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.0, 0.8), ovenInsideMat); ovenCavity.position.set(-0.3, 0.7, 0.11); this.group.add(ovenCavity);
         
-        // Racks
         const rackGeom = new THREE.BoxGeometry(0.9, 0.02, 0.7);
         const rack1 = new THREE.Mesh(rackGeom, steelMatGeneral); rack1.position.set(-0.3, 0.5, 0.1); this.group.add(rack1);
         const rack2 = new THREE.Mesh(rackGeom, steelMatGeneral); rack2.position.set(-0.3, 0.9, 0.1); this.group.add(rack2);
 
-        // Door Pivot & Door
         this.doorPivot = new THREE.Group(); this.doorPivot.position.set(0.25, 0.7, 0.5); this.group.add(this.doorPivot);
         const door = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.1, 0.05), ovenMat); door.position.set(-0.55, 0, 0); this.doorPivot.add(door);
         const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.4), steelMatGeneral); handle.position.set(-1.0, 0, 0.05); this.doorPivot.add(handle);
 
-        // Specimen Load Hitbox
         const loadHitbox = new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.0, 0.8), new THREE.MeshBasicMaterial({visible:false}));
         loadHitbox.position.set(-0.3, 0.7, 0.1); loadHitbox.userData.isOvenLoader = true; this.group.add(loadHitbox);
 
         this.specimenGroup = new THREE.Group(); this.specimenGroup.position.set(-0.3, 0.55, 0.1); this.group.add(this.specimenGroup);
 
-        // Monitor
         const canvas = document.getElementById('ovenMonitorCanvas'); this.ctx = canvas.getContext('2d'); this.screenTexture = new THREE.CanvasTexture(canvas);
         const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 0.6), new THREE.MeshBasicMaterial({ map: this.screenTexture })); screen.position.set(1.2, 1.15, 0.3); screen.rotation.y = -Math.PI / 6; screen.userData.isOvenMonitor = true; this.group.add(screen);
     }
@@ -52,11 +48,9 @@ class OvenStation {
         
         this.activeMix = mixData; this.state.hasSpecimen = true;
         
-        // Calculate theoretical mass based on prep.js data (Volume of 150x300 cyl is ~5.3L)
-        // Adjust these mock weights based on your scale preference
         const volFactor = mixData.type === 'cylinder' ? 5.3 : 3.375; 
-        const wetDensity = 2.4; // approx kg/L
-        this.state.initialMass = volFactor * wetDensity * 1000; // in grams
+        const wetDensity = 2.4; 
+        this.state.initialMass = volFactor * wetDensity * 1000; 
         
         const geom = mixData.type === 'cylinder' ? new THREE.CylinderGeometry(0.075, 0.075, 0.3, 32) : new THREE.BoxGeometry(0.15, 0.15, 0.15);
         this.testMesh = new THREE.Mesh(geom, new THREE.MeshStandardMaterial({ map: createNoiseTexture('#94a3b8'), roughness: 0.9 }));
@@ -80,13 +74,13 @@ class OvenStation {
         }
 
         this.ctx.fillStyle = '#0f172a'; this.ctx.fillRect(0, 0, 800, 600); this.ctx.fillStyle = '#1e3a8a'; this.ctx.fillRect(0, 0, 800, 60);
+        // ASTM C642
         this.ctx.fillStyle = '#ffffff'; this.ctx.font = 'bold 28px Arial'; this.ctx.textAlign = 'left'; this.ctx.fillText('OVEN DRY & ABSORPTION TEST (ASTM C642)', 20, 40);
         this.ctx.fillStyle = '#dc2626'; this.ctx.fillRect(750, 10, 40, 40); this.ctx.fillStyle = '#fff'; this.ctx.font = 'bold 20px Arial'; this.ctx.textAlign = 'center'; this.ctx.fillText('X', 770, 38);
 
         this.ctx.fillStyle = '#1e293b'; this.ctx.fillRect(20, 80, 360, 400);
         this.ctx.fillStyle = '#38bdf8'; this.ctx.font = 'bold 20px Arial'; this.ctx.textAlign = 'center'; this.ctx.fillText('CHAMBER STATUS', 200, 120);
         
-        // Temperature Display
         this.ctx.fillStyle = '#000'; this.ctx.fillRect(100, 150, 200, 80);
         this.ctx.fillStyle = this.state.temp > 50 ? '#ef4444' : '#4ade80'; this.ctx.font = 'bold 48px monospace'; this.ctx.fillText(`${Math.floor(this.state.temp)}°C`, 200, 205);
 
@@ -127,40 +121,38 @@ class OvenStation {
         });
 
         document.getElementById('ovenDoorBtn').onclick = () => {
-            if(this.state.phase === 'baking') return; // Locked while baking
+            if(this.state.phase === 'baking') return; 
             this.state.doorOpen = !this.state.doorOpen;
             gsap.to(this.doorPivot.rotation, {y: this.state.doorOpen ? Math.PI / 1.5 : 0, duration: 1});
             this.drawMonitor(true);
         };
 
         document.getElementById('ovenBakeBtn').onclick = () => {
-            if(this.state.doorOpen) { document.getElementById('ovenDoorBtn').click(); } // Auto-close
+            if(this.state.doorOpen) { document.getElementById('ovenDoorBtn').click(); } 
             this.state.phase = 'baking'; document.getElementById('ovenBakeBtn').disabled = true;
             
-            // Calculate final mass based on water lost (using prep data logic)
-            // The higher the w/c ratio, the more mass it loses
             let wc = parseFloat(this.activeMix.w) / parseFloat(this.activeMix.c) || 0.5;
-            let waterLossPct = (wc * 0.15) + (Math.random() * 0.02); // Simplified physics approximation
+            let waterLossPct = (wc * 0.15) + (Math.random() * 0.02); 
             this.state.finalMass = this.state.initialMass * (1 - waterLossPct);
             this.state.absorption = ((this.state.initialMass - this.state.finalMass) / this.state.finalMass) * 100;
 
-            // Animate temperature rise
+            // ASTM C642 Baking Temp: 110°C
             gsap.to(this.state, { temp: 110, duration: 3, ease: "power1.inOut", onUpdate: () => this.drawMonitor(true), onComplete: () => {
                 setTimeout(() => {
                     gsap.to(this.state, { temp: 23, duration: 3, ease: "power1.inOut", onUpdate: () => this.drawMonitor(true), onComplete: () => {
                         this.state.phase = 'done'; this.drawMonitor(true); alert("Baking complete. Specimen is dry.");
                     }});
-                }, 2000); // Wait 2 seconds at 110C (simulating 24h)
+                }, 2000); 
             }});
         };
 
         document.getElementById('ovenWeighBtn').onclick = () => {
             if(this.state.phase === 'done') {
                 this.state.phase = 'weighing';
-                gsap.to(this.specimenGroup.position, {x: 1.2, y: 0.9, z: 0.3, duration: 1, ease: "power2.out"}); // Move to scale
+                gsap.to(this.specimenGroup.position, {x: 1.2, y: 0.9, z: 0.3, duration: 1, ease: "power2.out"}); 
                 this.drawMonitor(true);
             } else if (this.state.phase === 'idle' && this.state.hasSpecimen) {
-                gsap.to(this.specimenGroup.position, {x: 1.2, y: 0.9, z: 0.3, duration: 1, ease: "power2.out"}); // Initial weigh
+                gsap.to(this.specimenGroup.position, {x: 1.2, y: 0.9, z: 0.3, duration: 1, ease: "power2.out"}); 
             }
         };
 
@@ -168,12 +160,10 @@ class OvenStation {
             this.state.phase = 'idle'; this.state.hasSpecimen = false; this.activeMix = null;
             this.state.initialMass = 0; this.state.finalMass = 0; this.state.absorption = 0;
             while(this.specimenGroup.children.length > 0){ this.specimenGroup.remove(this.specimenGroup.children[0]); }
-            this.specimenGroup.position.set(-0.3, 0.55, 0.1); // Reset position
+            this.specimenGroup.position.set(-0.3, 0.55, 0.1); 
             document.getElementById('ovenBakeBtn').disabled = true; this.drawMonitor(true);
         };
     }
 
-    update(delta) {
-        // Any continuous logic can go here (particles for heat waves, etc.)
-    }
+    update(delta) { }
 }

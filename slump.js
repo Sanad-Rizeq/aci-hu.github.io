@@ -3,7 +3,6 @@ class SlumpStation {
         this.group = new THREE.Group(); this.group.position.set(x, 0, z);
         this.uiID = 'slumpUI'; this.uiVisible = false; this.name = 'Slump Test';
         
-        // UPGRADE: Added currentLayer tracking for ASTM standard
         this.testState = { phase: 'idle', mixType: 'standard', slumpMm: 75, currentLayer: 0, compactions: 0, animTimer: 0 };
         this.osState = 'desktop'; 
         this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -31,14 +30,12 @@ class SlumpStation {
     buildMachine() {
         this.group.add(createAntiVibrationMat(2.0, 2.0));
 
-        // GRAPHICS UPGRADE: Using MeshPhysicalMaterial for better reflections and realism
         const galvSteelMat = new THREE.MeshPhysicalMaterial({ 
             color: 0xcbd5e1, metalness: 0.9, roughness: 0.4, clearcoat: 0.5, clearcoatRoughness: 0.2, side: THREE.DoubleSide 
         });
         const darkSteelMat = new THREE.MeshPhysicalMaterial({ 
             color: 0x475569, metalness: 0.8, roughness: 0.5, clearcoat: 0.2 
         });
-        // Glossy wet concrete
         this.wetConcreteMat = new THREE.MeshPhysicalMaterial({ 
             map: createNoiseTexture('#64748b'), roughness: 0.2, metalness: 0.1, clearcoat: 0.8 
         });
@@ -46,6 +43,7 @@ class SlumpStation {
         const basePlate = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.02, 0.8), darkSteelMat); basePlate.position.set(0, 0.01, 0); basePlate.receiveShadow = true; this.group.add(basePlate);
         
         this.coneGroup = new THREE.Group(); this.coneGroup.position.set(0, 0.02, 0); this.group.add(this.coneGroup);
+        // ASTM C143 Slump Cone: Top Dia: 100mm, Bot Dia: 200mm, Height: 300mm
         const coneMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.1, 0.3, 32, 1, true), galvSteelMat); coneMesh.position.y = 0.15; coneMesh.castShadow = true; this.coneGroup.add(coneMesh);
         
         const handleGeom = new THREE.TorusGeometry(0.04, 0.006, 16, 32, Math.PI);
@@ -55,6 +53,7 @@ class SlumpStation {
         const foot1 = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.01, 0.03), darkSteelMat); foot1.position.set(0.12, 0.005, 0); this.coneGroup.add(foot1);
         const foot2 = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.01, 0.03), darkSteelMat); foot2.position.set(-0.12, 0.005, 0); this.coneGroup.add(foot2);
         
+        // ASTM C143 Tamping Rod: 16mm Dia x 600mm L
         this.rodGroup = new THREE.Group(); this.rodGroup.position.set(0.3, 0.3, 0); this.rodGroup.rotation.z = Math.PI / 6; this.group.add(this.rodGroup);
         const rodMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.6, 16), darkSteelMat); rodMesh.castShadow = true; this.rodGroup.add(rodMesh);
         const rodTip = new THREE.Mesh(new THREE.SphereGeometry(0.008, 16, 16), darkSteelMat); rodTip.position.y = -0.3; this.rodGroup.add(rodTip);
@@ -104,55 +103,45 @@ class SlumpStation {
         document.getElementById('liftBtn').disabled = true; document.getElementById('measureBtn').disabled = true;
         
         if (this.testState.mixType.startsWith('inv_')) {
-            const id = this.testState.mixType.split('_')[1]; const mix = window.LabState.inventory.find(m => m.id === id); this.testState.slumpMm = mix ? mix.slumpMm : 75;
+            const batchId = this.testState.mixType.split('_')[1]; 
+            const mix = window.LabState.inventory.find(m => m.batchId == batchId); 
+            this.testState.slumpMm = mix ? mix.slumpMm : 75;
         } else { this.testState.slumpMm = 75; }
         this.drawMonitor(this.testState.phase === 'done');
     }
 
-    // OS UPGRADE: Windows-style Desktop Environment
     drawMonitor(isDone = false) {
-        // 1. Draw Wallpaper
         const grad = this.ctx.createLinearGradient(0, 0, 800, 600);
         grad.addColorStop(0, '#0f172a'); grad.addColorStop(1, '#1e3a8a');
         this.ctx.fillStyle = grad; this.ctx.fillRect(0,0,800,600);
 
-        // Grid overlay for "tech" feel
         this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)'; this.ctx.lineWidth = 1;
         for(let i=0; i<800; i+=40) { this.ctx.beginPath(); this.ctx.moveTo(i,0); this.ctx.lineTo(i,600); this.ctx.stroke(); }
         for(let i=0; i<600; i+=40) { this.ctx.beginPath(); this.ctx.moveTo(0,i); this.ctx.lineTo(800,i); this.ctx.stroke(); }
 
-        // 2. Draw Desktop Icon
         this.ctx.fillStyle = 'rgba(255, 255, 255, 0.1)'; this.ctx.fillRect(30, 30, 80, 80);
         this.ctx.fillStyle = '#cbd5e1'; this.ctx.beginPath(); this.ctx.moveTo(70, 45); this.ctx.lineTo(85, 90); this.ctx.lineTo(55, 90); this.ctx.fill();
         this.ctx.fillStyle = '#e1e7ef'; this.ctx.font = '12px Arial'; this.ctx.textAlign = 'center'; this.ctx.fillText('SlumpOS.exe', 70, 130);
 
-        // 3. Draw Taskbar
         this.ctx.fillStyle = 'rgba(15, 23, 42, 0.9)'; this.ctx.fillRect(0, 560, 800, 40);
-        this.ctx.fillStyle = '#38bdf8'; this.ctx.fillRect(10, 565, 40, 30); // Start Button
+        this.ctx.fillStyle = '#38bdf8'; this.ctx.fillRect(10, 565, 40, 30); 
         this.ctx.fillStyle = '#fff'; this.ctx.font = 'bold 16px Arial'; this.ctx.textAlign = 'center'; this.ctx.fillText('ACI', 30, 586);
         
-        // Live Clock on Taskbar
         const timeString = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
         this.ctx.fillStyle = '#e1e7ef'; this.ctx.font = '14px Arial'; this.ctx.textAlign = 'right'; this.ctx.fillText(timeString, 780, 585);
 
-        // 4. Draw Application Window (if open)
         if (this.osState === 'software') {
             const wx = 50, wy = 40, ww = 700, wh = 500;
-            // Window Shadow
             this.ctx.fillStyle = 'rgba(0,0,0,0.5)'; this.ctx.fillRect(wx+5, wy+5, ww, wh);
-            // Window Background
             this.ctx.fillStyle = '#1e293b'; this.ctx.fillRect(wx, wy, ww, wh);
-            // Title Bar
             this.ctx.fillStyle = '#334155'; this.ctx.fillRect(wx, wy, ww, 30);
             this.ctx.fillStyle = '#fff'; this.ctx.font = 'bold 14px Arial'; this.ctx.textAlign = 'left'; this.ctx.fillText('Slump Analysis Suite v2.0', wx + 10, wy + 20);
-            // Close Button
             this.ctx.fillStyle = '#ef4444'; this.ctx.fillRect(wx + ww - 40, wy, 40, 30);
             this.ctx.fillStyle = '#fff'; this.ctx.textAlign = 'center'; this.ctx.fillText('X', wx + ww - 20, wy + 20);
 
-            // APP CONTENT
             this.ctx.fillStyle = '#0f172a'; this.ctx.fillRect(wx+10, wy+40, ww-20, wh-50);
             
-            let typeStr = this.testState.mixType.startsWith('inv') ? "CUSTOM MIX" : "GENERIC MIX";
+            let typeStr = this.testState.mixType.startsWith('inv') ? "CUSTOM BATCH" : "GENERIC MIX";
             this.ctx.fillStyle = '#38bdf8'; this.ctx.font = 'bold 20px Arial'; this.ctx.textAlign = 'center'; this.ctx.fillText(`CURRENT SPECIMEN: ${typeStr}`, wx + ww/2, wy + 80);
 
             if (!isDone) { 
@@ -160,7 +149,6 @@ class SlumpStation {
                 let statusText = `AWAITING DATA... (Layer ${this.testState.currentLayer}/3)`;
                 this.ctx.fillText(statusText, wx + ww/2, wy + 250); 
             } else {
-                // Render Final Results Inside Window
                 const cx = wx + 200, cy = wy + 400; 
                 this.ctx.strokeStyle = '#94a3b8'; this.ctx.lineWidth = 2; this.ctx.setLineDash([5, 5]);
                 this.ctx.beginPath(); this.ctx.moveTo(cx - 40, cy - 250); this.ctx.lineTo(cx + 40, cy - 250); this.ctx.lineTo(cx + 80, cy); this.ctx.lineTo(cx - 80, cy); this.ctx.closePath(); this.ctx.stroke(); this.ctx.setLineDash([]);
@@ -197,7 +185,6 @@ class SlumpStation {
         canvas.addEventListener('click', (e) => {
             if(canvas.style.display !== 'block' || this.osState !== 'software') return;
             const rect = canvas.getBoundingClientRect(); const x = (e.clientX - rect.left) * (canvas.width / rect.width); const y = (e.clientY - rect.top) * (canvas.height / rect.height);
-            // Check OS Close button hit (top right of window)
             if(x > 710 && x < 750 && y > 40 && y < 70) { this.osState = 'desktop'; this.drawMonitor(false); }
             if(x > 500 && x < 700 && y > 430 && y < 470 && this.testState.phase === 'done') { window.exportPDFReport('slumpMonitorCanvas', 'Slump_Test_Report'); }
         });
@@ -205,12 +192,21 @@ class SlumpStation {
         window.addEventListener('inventoryUpdate', () => {
             const select = document.getElementById('slumpType');
             Array.from(select.options).forEach(opt => { if(opt.value.startsWith('inv_')) select.remove(opt.index); });
-            window.LabState.inventory.forEach(mix => { const opt = document.createElement('option'); opt.value = `inv_${mix.id}`; opt.text = mix.name; select.add(opt); });
+            
+            const batches = new Set();
+            window.LabState.inventory.forEach(mix => { 
+                if(mix.type !== 'steel' && !batches.has(mix.batchId) && !mix.id.toString().startsWith('std_')) {
+                    batches.add(mix.batchId);
+                    const opt = document.createElement('option'); 
+                    opt.value = `inv_${mix.batchId}`; 
+                    opt.text = mix.mixName; 
+                    select.add(opt); 
+                }
+            });
         });
         
         document.getElementById('slumpType').onchange = (e) => { this.testState.mixType = e.target.value; this.resetMachine(); };
         
-        // UPGRADED LOGIC: Layer by Layer Filling
         document.getElementById('fillBtn').onclick = () => { 
             this.testState.phase = 'filling'; 
             this.testState.animTimer = 0; 
@@ -247,6 +243,7 @@ class SlumpStation {
             this.rodGroup.position.y = baseHeight + 0.1 + Math.sin(this.testState.animTimer * 20) * 0.15;
             
             if (this.rodGroup.position.y < baseHeight && !this.dipped) { 
+                // ASTM C143 Compaction Rule: 25 strokes per layer
                 this.testState.compactions++; this.dipped = true; this.playTampSound(); 
                 document.getElementById('compactBtn').textContent = `Rodding (${this.testState.compactions}/25)`; 
             }
@@ -279,6 +276,14 @@ class SlumpStation {
                 const finalSlump = this.testState.slumpMm + (Math.random() * 10 - 5); this.testState.slumpMm = Math.max(0, finalSlump);
                 this.generateSlumpMesh(this.testState.slumpMm / 1000); 
                 document.getElementById('measureBtn').disabled = false;
+                
+                if (this.testState.mixType.startsWith('inv_')) {
+                    const batchId = this.testState.mixType.split('_')[1];
+                    window.LabState.inventory.forEach(m => {
+                        if (m.batchId == batchId) m.testedSlump = Math.round(this.testState.slumpMm);
+                    });
+                    window.dispatchEvent(new Event('inventoryUpdate'));
+                }
             }
         }
         

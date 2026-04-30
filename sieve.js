@@ -30,7 +30,6 @@ class SieveStation {
         const base = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.3, 0.9), matWhite); base.position.y = 0.15; base.castShadow = true; base.receiveShadow = true; this.group.add(base);
         const screenPanel = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.1, 0.05), matRubber); screenPanel.position.set(0, 0.2, 0.45); this.group.add(screenPanel);
 
-        // Extended rods to fit the taller 9-sieve stack
         const steelMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.8, roughness: 0.2 });
         const rod1 = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1.5), steelMat); rod1.position.set(-0.35, 1.0, 0); this.group.add(rod1);
         const rod2 = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1.5), steelMat); rod2.position.set(0.35, 1.0, 0); this.group.add(rod2);
@@ -38,7 +37,7 @@ class SieveStation {
         this.vibratingGroup = new THREE.Group(); this.vibratingGroup.position.y = 0.35; this.group.add(this.vibratingGroup);
         const motorPlate = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.05, 32), matRubber); motorPlate.castShadow = true; this.vibratingGroup.add(motorPlate);
 
-        // Full ASTM Standard Stack
+        // ASTM C136 Standard Sieve Stack Series
         this.sieves = [ 
             { size: '3/8" (9.5mm)', opening: 9.5, meshDensity: 4 },
             { size: '#4 (4.75mm)', opening: 4.75, meshDensity: 8 },
@@ -71,10 +70,8 @@ class SieveStation {
             this.vibratingGroup.add(sieveGroup); this.sieveObjects.push({ group: sieveGroup, data: sieve, yFloor: sieveGroup.position.y - (sieveHeight/2) + 0.01 });
         });
 
-        // Raised top plate to sit on top of the 9th sieve
         const topPlate = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.05, 32), matRubber); topPlate.position.y = 0.05 + (sieveHeight * this.sieves.length) + 0.05; this.vibratingGroup.add(topPlate);
 
-        // Particle System
         this.particleCount = 1500; 
         this.particleMesh = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1, 0), matStone, this.particleCount); 
         this.particleMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); this.particleMesh.castShadow = true; this.vibratingGroup.add(this.particleMesh);
@@ -156,13 +153,12 @@ class SieveStation {
                     const cumRetainedPct = (cumulativeRetained / totalMass) * 100;
                     percentRetainedArr.push(cumRetainedPct);
                     
-                    // Fineness Modulus ONLY sums #100 sieve and larger. Excludes #200 and Pan.
+                    // Fineness Modulus: Sum of cumulative % retained on #100 and above
                     if (this.sieves[index].opening >= 0.15) { cumulativePctRetainedSum += cumRetainedPct; }
                 });
 
                 const finenessModulus = cumulativePctRetainedSum / 100;
 
-                // DATA TABLE
                 this.ctx.fillStyle = '#1e3a8a'; this.ctx.fillRect(wx+20, wy+50, 280, 25);
                 this.ctx.fillStyle = '#fff'; this.ctx.font = 'bold 12px Arial'; this.ctx.textAlign = 'left';
                 this.ctx.fillText('Sieve', wx+25, wy+67); this.ctx.fillText('Mass(g)', wx+110, wy+67); this.ctx.fillText('% Ret', wx+180, wy+67); this.ctx.fillText('% Pass', wx+240, wy+67);
@@ -170,9 +166,9 @@ class SieveStation {
                 this.ctx.font = '12px monospace';
                 this.sieves.forEach((sieve, i) => {
                     this.ctx.fillStyle = i % 2 === 0 ? '#1e293b' : '#334155';
-                    this.ctx.fillRect(wx+20, wy+75 + (i*20), 280, 20); // Compressed rows for 9 sieves
+                    this.ctx.fillRect(wx+20, wy+75 + (i*20), 280, 20); 
                     this.ctx.fillStyle = '#e1e7ef';
-                    this.ctx.fillText(sieve.size.split(' ')[0], wx+25, wy+90 + (i*20)); // Only show # Name
+                    this.ctx.fillText(sieve.size.split(' ')[0], wx+25, wy+90 + (i*20)); 
                     
                     const scaledMass = (massRetained[i] / totalMass) * 1000;
                     this.ctx.fillText(scaledMass.toFixed(1), wx+110, wy+90 + (i*20));
@@ -181,7 +177,6 @@ class SieveStation {
                     this.ctx.fillText(percentPassing[i].toFixed(1), wx+240, wy+90 + (i*20));
                 });
 
-                // METRICS PANEL
                 this.ctx.fillStyle = '#1e3a8a'; this.ctx.fillRect(wx+20, wy+265, 280, 25);
                 this.ctx.fillStyle = '#fff'; this.ctx.font = 'bold 12px Arial'; this.ctx.fillText('AGGREGATE METRICS', wx+25, wy+282);
                 this.ctx.fillStyle = '#1e293b'; this.ctx.fillRect(wx+20, wy+290, 280, 80);
@@ -195,11 +190,9 @@ class SieveStation {
                 this.ctx.fillText('Classification:', wx+30, wy+350); 
                 this.ctx.fillStyle = '#eab308'; this.ctx.font = 'bold 14px Arial'; this.ctx.fillText(aggType, wx+130, wy+350);
 
-                // Export Button
                 this.ctx.fillStyle = '#10b981'; this.ctx.fillRect(wx+20, wy+390, 280, 40);
                 this.ctx.fillStyle = '#fff'; this.ctx.font = 'bold 14px Arial'; this.ctx.textAlign = 'center'; this.ctx.fillText('💾 EXPORT ASTM REPORT', wx+160, wy+415);
 
-                // LOGARITHMIC GRAPH
                 const gx = wx + 340, gy = wy + 400, gw = 360, gh = 320;
                 this.ctx.fillStyle = '#1e293b'; this.ctx.fillRect(gx, gy-gh, gw, gh);
                 this.ctx.strokeStyle = '#475569'; this.ctx.lineWidth = 1; 
@@ -262,7 +255,6 @@ class SieveStation {
             this.state.isInspecting = !this.state.isInspecting; const btn = document.getElementById('inspectBtn');
             if(this.state.isInspecting) {
                 btn.textContent = "Reassemble Stack [3]"; btn.style.borderColor = "#d946ef"; btn.style.color = "#d946ef";
-                // Adjusted fan-out logic for 9 sieves
                 this.sieveObjects.forEach((sObj, i) => { 
                     sObj.group.userData.targetOffsetX = (i - 4.0) * 0.45; 
                     sObj.group.userData.targetOffsetY = -0.1 - sObj.group.userData.origY; 

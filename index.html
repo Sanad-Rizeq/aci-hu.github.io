@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Advanced Civil Engineering Lab</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Space+Grotesk:wght@300;400;500;600;700&family=Caveat:wght@400;600;700&display=swap');
+        
         :root { --lab-primary: #0c1116; --lab-surface: rgba(26, 35, 50, 0.95); --lab-border: rgba(0, 217, 255, 0.3); --lab-accent: #00d9ff; --lab-warning: #ff6b35; --lab-success: #00ff88; --lab-text: #e1e7ef; }
         * { box-sizing: border-box; }
         body { margin: 0; font-family: 'Space Grotesk', sans-serif; background: var(--lab-primary); color: var(--lab-text); overflow: hidden; user-select: none; -webkit-user-select: none; touch-action: none; }
@@ -29,7 +30,6 @@
 
         #uiInstruction { position: absolute; top: 80px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: var(--lab-success); padding: 10px 20px; border-radius: 5px; font-weight: bold; display: none; z-index: 100; text-transform: uppercase; font-size: 14px; letter-spacing: 1px; text-align: center;}
 
-        /* --- MOBILE TOUCH CONTROLS --- */
         #mobileControls { display: none; position: absolute; inset: 0; z-index: 90; pointer-events: none; }
         #joystickZone { position: absolute; bottom: 0; left: 0; width: 40%; height: 60%; pointer-events: auto; }
         #lookZone { position: absolute; top: 0; right: 0; width: 60%; height: 100%; pointer-events: auto; }
@@ -40,8 +40,8 @@
         .mob-btn { width: 60px; height: 60px; background: rgba(0,0,0,0.5); border: 2px solid rgba(255,255,255,0.2); border-radius: 50%; color: white; font-size: 24px; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.5); -webkit-tap-highlight-color: transparent; }
         .mob-btn:active { background: rgba(0, 217, 255, 0.5); border-color: var(--lab-accent); }
         .mob-btn.active-toggle { background: var(--lab-accent); color: black; border-color: white; }
+        #mobNotebook { width: 50px; height: 50px; font-size: 20px; }
 
-        /* --- REALISTIC IPAD PRO STYLING --- */
         #labTablet { display: none; position: fixed; bottom: 20px; right: 20px; width: 380px; height: 550px; padding: 16px; background: linear-gradient(135deg, #2a2a2a 0%, #111 100%); border-radius: 40px; box-shadow: inset 0 0 0 2px #555, 0 30px 60px rgba(0,0,0,0.9), 0 0 0 2px #222; z-index: 2000; flex-direction: column; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         #labTablet::before { content: ''; position: absolute; top: 22px; left: 50%; transform: translateX(-50%); width: 8px; height: 8px; background: #050505; border-radius: 50%; border: 1px solid #1a1a1a; z-index: 10; box-shadow: inset 1px 1px 2px rgba(255,255,255,0.1); }
         #labTablet::after { content: ''; position: absolute; top: 100px; left: -3px; width: 3px; height: 45px; background: #555; border-radius: 3px 0 0 3px; box-shadow: 0 60px 0 0 #555; z-index: -1; }
@@ -56,18 +56,117 @@
         .station-ui button { padding: 12px 15px; font-weight: bold; border: 1px solid var(--lab-border); border-radius: 8px; background: rgba(0, 217, 255, 0.1); color: white; cursor: pointer; text-transform: uppercase; font-family: 'Space Grotesk'; width: 100%; font-size: 12px; }
         .station-ui button:hover:not(:disabled) { background: var(--lab-accent); color: black; }
         .station-ui button:disabled { background: #1e293b; color: #475569; border-color: transparent; cursor: not-allowed; }
-        select, input[type=number] { background: #000; color: white; border: 1px solid var(--lab-border); padding: 10px; border-radius: 6px; text-align: center; width: 100%; }
+        select, input[type=text], input[type=number] { background: #000; color: white; border: 1px solid var(--lab-border); padding: 10px; border-radius: 6px; text-align: center; width: 100%; }
 
         #ndtUI { flex-direction: column; color: white; }
         .ndt-method-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(0,217,255,0.2); padding: 15px; border-radius: 12px; margin-bottom: 15px; }
         .ndt-method-card h3 { margin: 0 0 5px 0; font-family: 'JetBrains Mono'; font-size: 16px; color: var(--lab-accent); }
         .ndt-method-card p { font-size: 12px; color: #94a3b8; margin-top: 0; margin-bottom: 15px; }
 
+        #labNotebook {
+            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 90vw; max-width: 1200px; height: 85vh; max-height: 900px;
+            background-color: #1e293b; border-radius: 10px;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.9), inset 0 0 20px rgba(0,0,0,0.5);
+            z-index: 3000; padding: 15px;
+            font-family: 'Caveat', cursive; color: #1e3a8a;
+            overflow: hidden;
+        }
+
+        #labNotebook::after {
+            content: ''; position: absolute; top: 0; left: 50%; bottom: 0; width: 40px; transform: translateX(-50%);
+            background: repeating-linear-gradient(to bottom, transparent, transparent 20px, #0f172a 20px, #0f172a 28px, transparent 28px, transparent 40px);
+            z-index: 3002; filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.5)); pointer-events: none;
+        }
+
+        .notebook-controls { position: absolute; top: 20px; right: 30px; z-index: 3005; display: flex; gap: 15px; }
+        .nb-nav-btn { background: #1d4ed8; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-family: 'Space Grotesk'; font-weight: bold; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .nb-nav-btn:hover { background: #2563eb; }
+        .close-notebook { background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; font-family: 'Space Grotesk'; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .close-notebook:hover { background: #dc2626; }
+
+        .notebook-slider { display: flex; height: 100%; transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1); }
+        .notebook-spread { display: flex; width: 100%; flex-shrink: 0; gap: 10px; }
+        
+        .notebook-page { 
+            width: 50%; height: 100%; position: relative; background-color: #fffdf8; border-radius: 5px;
+            background-image: linear-gradient(#f49393 1px, transparent 1px), linear-gradient(90deg, transparent 50px, #f49393 50px, #f49393 52px, transparent 52px), repeating-linear-gradient(#fffdf8, #fffdf8 30px, #cbd5e1 31px);
+            background-size: 100% 31px, 100% 100%, 100% 31px; background-position: 0 0, 0 0, 0 0;
+            padding: 40px 30px 40px 70px;
+            box-shadow: inset 5px 0 15px rgba(0,0,0,0.05), inset -5px 0 15px rgba(0,0,0,0.05);
+            overflow-y: auto; overflow-x: hidden; font-size: 24px; line-height: 31px; 
+        }
+
+        .nb-title { font-size: 36px; color: #0f172a; margin: 0 0 20px 0; border-bottom: 2px solid #1d4ed8; padding-bottom: 5px; display: inline-block; font-weight: 700; line-height: 1.2; }
+        
+        .calc-strength-btn { 
+            background: transparent; color: #ef4444; border: 2px dashed #ef4444; padding: 5px 15px; border-radius: 6px; 
+            font-family: 'Caveat', cursive; font-size: 22px; font-weight: bold; margin-top: 15px; cursor: pointer; transition: 0.2s; 
+        }
+        .calc-strength-btn:hover { background: rgba(239, 68, 68, 0.1); }
+        
+        .notebook-entry { background: rgba(255, 255, 255, 0.85); border: 2px dashed rgba(15, 23, 42, 0.2); border-radius: 8px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); font-family: 'JetBrains Mono'; font-size: 14px;}
+        .notebook-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 14px; }
+        .notebook-grid p { margin: 0; line-height: 1.4; }
+        .notebook-grid span { color: #475569; }
+        .notebook-grid strong { color: #0f172a; }
+
+        .nb-link { color: #1d4ed8; text-decoration: underline; cursor: pointer; font-weight: bold; transition: color 0.2s; font-size: 16px; font-family: 'JetBrains Mono';}
+        .nb-link:hover { color: #ef4444; }
+        .signature { font-family: 'Segoe Script', 'Brush Script MT', cursive; font-size: 32px; color: #1e3a8a; text-align: right; margin-top: 40px; transform: rotate(-5deg); margin-right: 40px; }
+        .date-stamp { font-family: 'JetBrains Mono', monospace; font-size: 14px; color: #64748b; text-align: right; margin-top: 20px; margin-right: 40px; }
+        .back-btn { background: transparent; border: none; color: #ef4444; font-weight: bold; font-family: 'JetBrains Mono'; cursor: pointer; font-size: 14px; margin-bottom: 15px; padding: 0; }
+        .back-btn:hover { text-decoration: underline; }
+        .peak-str { color: #16a34a !important; font-size: 16px; }
+
+        .engineering-notebook {
+            background-color: #fcfcf5;
+            background-image: 
+                linear-gradient(rgba(41, 128, 185, 0.15) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(41, 128, 185, 0.15) 1px, transparent 1px);
+            background-size: 20px 20px; 
+            border: 1px solid #cbd5e1;
+            border-left: 30px solid #1e293b;
+            border-radius: 4px 12px 12px 4px;
+            box-shadow: inset 5px 0 10px rgba(0,0,0,0.1), 3px 5px 15px rgba(0,0,0,0.3);
+            padding: 20px 20px 30px 50px; 
+            position: relative;
+            color: #1e3a8a; 
+            font-family: 'Caveat', cursive; 
+            font-size: 22px;
+            line-height: 1.6;
+            overflow: hidden;
+            margin-top: 15px;
+            min-height: 350px;
+        }
+
+        .engineering-notebook::before {
+            content: ''; position: absolute; top: 0; bottom: 0; left: 40px; width: 2px; background-color: rgba(239, 68, 68, 0.4); 
+        }
+
+        .engineering-notebook .hw-text { position: relative; z-index: 2; text-shadow: 0px 0px 1px rgba(30, 58, 138, 0.2); }
+        .engineering-notebook .hw-pen { display: inline-block; font-size: 24px; margin-left: 5px; animation: scribble 0.1s infinite alternate; }
+
+        @keyframes scribble {
+            0% { transform: rotate(0deg) translateY(0px); }
+            100% { transform: rotate(-15deg) translateY(-2px); }
+        }
+
+        .engineering-notebook .hw-canvas { margin-top: 20px; display: block; mix-blend-mode: multiply; position: relative; z-index: 2; }
+
         #osContainer { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 9999; justify-content: center; align-items: center; }
         #osContainer.active { display: flex; }
         #osWrapper { position: relative; width: 95vw; height: 95vh; max-width: 1000px; max-height: 750px; }
         .os-canvas { width: 100%; height: 100%; border: 15px solid #0f172a; border-radius: 12px; background: #000; display: none; object-fit: contain; }
         #closeOSBtn { position: absolute; top: -15px; right: -15px; width: 45px; height: 45px; background: #dc2626; color: white; border: none; border-radius: 50%; font-size: 20px; cursor: pointer; z-index: 10000; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+
+        @media (max-width: 768px) {
+            #labNotebook { width: 98vw; height: 90vh; padding: 5px; }
+            .notebook-page { width: 100%; padding: 20px 15px 20px 50px; }
+            #labNotebook::after { display: none; }
+            .notebook-spread { flex-direction: column; overflow-y: auto; }
+            .notebook-slider { height: auto; }
+        }
     </style>
 </head>
 <body>
@@ -77,7 +176,7 @@
         <p id="pcInstructions" style="margin-top:20px; color:#94a3b8; font-family:monospace; text-align:center; line-height:1.6;">
             <b>WASD</b>: Walk &nbsp;|&nbsp; <b>SHIFT</b>: Sprint &nbsp;|&nbsp; <b>C</b>: Toggle Crouch<br>
             <b>E</b>: Pick Up Object &nbsp;|&nbsp; <b>RIGHT-CLICK + DRAG</b>: Inspect Held Object<br>
-            <b>TAB</b>: Open iPad &nbsp;|&nbsp; <b>DOUBLE-TAB</b>: Fullscreen iPad
+            <b>TAB</b>: Open iPad &nbsp;|&nbsp; <b>N</b>: Field Notebook
         </p>
     </div>
 
@@ -88,6 +187,7 @@
         <div id="lookZone"></div>
         <div id="mobileActionBtns">
             <div class="mob-btn" id="mobTablet">📱</div>
+            <div class="mob-btn" id="mobNotebook">📓</div>
             <div class="mob-btn" id="mobInteract">🖐️</div>
             <div class="mob-btn" id="mobInspect">🔍</div>
             <div style="display: flex; gap: 10px;">
@@ -112,20 +212,16 @@
 
     <div id="labTablet">
         <div class="tablet-screen">
-            <div class="tablet-header">
-                <span id="tabletTitle">Station Control Panel</span>
-                <button class="close-tablet" id="closeTabletBtn">CLOSE</button>
-            </div>
+            <div class="tablet-header"><span id="tabletTitle">Station Control Panel</span><button class="close-tablet" id="closeTabletBtn">CLOSE</button></div>
             
             <div id="curingUI" class="station-ui">
+                <div class="control-group" style="width: 100%;"><label class="label">Target Specimen</label><select id="curingSpecSelect" style="margin-bottom: 10px;"><option value="all">Age ALL Specimens</option></select></div>
                 <div class="control-group"><label class="label">Time Control</label><button id="cure3Btn" style="border-color: #3b82f6;">Advance 3 Days</button></div>
                 <div class="control-group"><label class="label">Time Control</label><button id="cure7Btn" style="border-color: #3b82f6;">Advance 7 Days</button></div>
                 <div class="control-group"><label class="label">Time Control</label><button id="cure28Btn" style="border-color: #3b82f6;">Advance 28 Days</button></div>
             </div>
 
-            <div id="masterUI" class="station-ui">
-                <div class="control-group"><label class="label">System</label><button style="border-color: #00d9ff; color: #00d9ff;">Access Director OS</button></div>
-            </div>
+            <div id="masterUI" class="station-ui"><div class="control-group"><label class="label">System</label><button style="border-color: #00d9ff; color: #00d9ff;">Access Director OS</button></div></div>
 
             <div id="slumpUI" class="station-ui">
                 <div class="control-group"><label class="label">Mix Selector</label><select id="slumpType"><option value="standard">Generic Concrete</option></select></div>
@@ -143,7 +239,9 @@
             </div>
 
             <div id="prepUI" class="station-ui">
-                <div class="control-group" style="width: 100%;"><label class="label">Input (kg/L)</label><input type="number" id="prepAmt" value="1.0" min="0.1" step="0.1"></div>
+                <div class="control-group" style="width: 100%;"><label class="label">Mix Design Name</label><input type="text" id="prepMixName" value="Mix-1" style="text-align: left;"></div>
+                <div class="control-group" style="width: 100%;"><label class="label">Specimen Prefix</label><input type="text" id="prepSpecPrefix" value="Sample" style="text-align: left;"></div>
+                <div class="control-group" style="width: 100%; margin-top: 10px;"><label class="label">Input (kg/L)</label><input type="number" id="prepAmt" value="1.0" min="0.1" step="0.1"></div>
                 <div class="control-group"><label class="label">Batching</label><button id="addCementBtn">Cement [1]</button></div>
                 <div class="control-group"><label class="label">Batching</label><button id="addSandBtn">Sand [2]</button></div>
                 <div class="control-group"><label class="label">Batching</label><button id="addGravelBtn">Gravel [3]</button></div>
@@ -151,8 +249,11 @@
                 <div class="control-group" style="width: 100%;"><label class="label">Scale</label><button id="dumpBowlBtn" style="border-color: #d946ef;" disabled>Dump to Mixer</button></div>
                 <div class="control-group"><label class="label">Machine</label><button id="mixerBtn" style="border-color: var(--lab-success);">🔄 Mix [5]</button></div>
                 <div class="control-group"><label class="label">Machine</label><button id="dumpMixerBtn" style="border-color: var(--lab-warning);">Dump Trolley</button></div>
+                <div class="control-group" style="width:100%;"><label class="label" style="color:var(--lab-accent);">Unlimited Casting Available</label></div>
                 <div class="control-group"><label class="label">Mold</label><button id="castCylBtn" style="border-color: #f43f5e;">Cast Cylinder</button></div>
                 <div class="control-group"><label class="label">Mold</label><button id="castCubeBtn" style="border-color: #f43f5e;">Cast Cube</button></div>
+                <div class="control-group" style="width:100%;"><label class="label">Mold</label><button id="castBeamBtn" style="border-color: #f43f5e;">Cast Rebar Beam (Flexural)</button></div>
+                <button id="resetPrepBtn" style="border-color: var(--lab-warning); color: var(--lab-warning); width: 100%; margin-top:10px;">Clean & Reset Batch</button>
             </div>
 
             <div id="sieveUI" class="station-ui">
@@ -186,26 +287,23 @@
             </div>
 
             <div id="ndtUI" class="station-ui">
-                <div class="control-group" style="width: 100%; margin-bottom: 10px;">
-                    <label class="label">Loaded Specimen</label>
-                    <select id="ndtSpecimenSelect">
-                        <option value="beam_rebar">Reinforced Beam (Default)</option>
-                        <option value="column">Structural Column (Default)</option>
-                    </select>
-                </div>
-                <div class="ndt-method-card" style="width: 100%;">
-                    <h3>Schmidt Rebound Hammer</h3>
-                    <p>ASTM C805 - Surface Hardness Evaluation</p>
-                    <button id="btnSchmidt" style="border-color: var(--lab-accent);">Strike Surface</button>
-                </div>
-                <div class="ndt-method-card" style="width: 100%;">
-                    <h3>Ultrasonic Pulse Velocity</h3>
-                    <p>ASTM C597 - Internal Flaw & Density Detection</p>
-                    <button id="btnUPV" style="border-color: var(--lab-accent);">Engage Transducers</button>
-                </div>
+                <div class="control-group" style="width: 100%; margin-bottom: 10px;"><label class="label">Loaded Specimen</label><select id="ndtSpecimenSelect"><option value="beam_rebar">Reinforced Beam (Default)</option><option value="column">Structural Column (Default)</option></select></div>
+                <div class="ndt-method-card" style="width: 100%;"><h3>Schmidt Rebound Hammer</h3><p>ASTM C805 - Surface Hardness Evaluation</p><button id="btnSchmidt" style="border-color: var(--lab-accent);">Strike Surface</button></div>
+                <div class="ndt-method-card" style="width: 100%;"><h3>Ultrasonic Pulse Velocity</h3><p>ASTM C597 - Internal Flaw & Density Detection</p><button id="btnUPV" style="border-color: var(--lab-accent);">Engage Transducers</button></div>
             </div>
         </div>
         <div class="tablet-home-bar"></div>
+    </div>
+
+    <div id="labNotebook">
+        <div class="notebook-controls">
+            <button class="nb-nav-btn" id="nbPrevBtn" style="display:none;">← Prev Page</button>
+            <button class="nb-nav-btn" id="nbNextBtn" style="display:none;">Next Page →</button>
+            <button class="close-notebook" id="closeNotebookBtn">CLOSE</button>
+        </div>
+        
+        <div id="notebookSlider" class="notebook-slider">
+            </div>
     </div>
 
     <div id="osContainer">
@@ -220,6 +318,7 @@
             <canvas id="ovenMonitorCanvas" class="os-canvas" width="800" height="600"></canvas>
             <canvas id="cbrMonitorCanvas" class="os-canvas" width="800" height="600"></canvas>
             <canvas id="ndtMonitorCanvas" class="os-canvas" width="800" height="600"></canvas>
+            <canvas id="curingMonitorCanvas" class="os-canvas" width="800" height="600"></canvas>
         </div>
     </div>
 

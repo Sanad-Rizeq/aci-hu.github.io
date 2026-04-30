@@ -6,9 +6,9 @@ class CBRStation {
         this.state = { phase: 'idle', penetration: 0, load: 0, dataPoints: [] };
         this.osState = 'desktop';
         
-        // Standard Loads for 100% CBR (California Limestone)
-        this.standardLoad25 = 13.3; // kN at 2.54 mm
-        this.standardLoad50 = 20.0; // kN at 5.08 mm
+        // ASTM D1883 Standard Loads
+        this.standardLoad25 = 13.3; // 13.3 kN @ 2.54 mm penetration
+        this.standardLoad50 = 20.0; // 20.0 kN @ 5.08 mm penetration
         
         this.buildMachine(); scene.add(this.group); this.bindUI();
         setInterval(() => { this.drawMonitor(this.state.phase === 'done'); }, 1000);
@@ -17,29 +17,28 @@ class CBRStation {
     buildMachine() {
         this.group.add(createAntiVibrationMat(1.5, 1.5));
 
-        // PBR Materials
         const frameMat = new THREE.MeshPhysicalMaterial({ color: 0x0ea5e9, metalness: 0.5, roughness: 0.5, clearcoat: 0.3 });
         const steelMat = new THREE.MeshPhysicalMaterial({ color: 0x94a3b8, metalness: 0.8, roughness: 0.3 });
         const soilMat = new THREE.MeshPhysicalMaterial({ color: 0x5c4033, roughness: 1.0, metalness: 0.0 });
 
-        // Machine Frame
         const base = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.2, 0.6), frameMat); base.position.y = 0.1; base.castShadow = true; this.group.add(base);
         const colL = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.0), steelMat); colL.position.set(-0.3, 0.6, 0); colL.castShadow = true; this.group.add(colL);
         const colR = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.0), steelMat); colR.position.set(0.3, 0.6, 0); colR.castShadow = true; this.group.add(colR);
         const topBeam = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.15, 0.3), frameMat); topBeam.position.y = 1.1; topBeam.castShadow = true; this.group.add(topBeam);
 
-        // Platen & Piston
         this.platen = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.05, 32), steelMat); this.platen.position.y = 0.225; this.group.add(this.platen);
-        this.piston = new THREE.Mesh(new THREE.CylinderGeometry(0.0248, 0.0248, 0.3, 32), steelMat); this.piston.position.y = 0.85; this.group.add(this.piston); // 49.6mm dia piston
+        
+        // ASTM D1883 Piston Diameter: 49.6 mm
+        this.piston = new THREE.Mesh(new THREE.CylinderGeometry(0.0248, 0.0248, 0.3, 32), steelMat); this.piston.position.y = 0.85; this.group.add(this.piston); 
         const dial = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.1), new THREE.MeshStandardMaterial({color: 0x111})); dial.position.set(0, 1.0, 0.1); this.group.add(dial);
 
-        // Soil Mold (Hidden initially)
         this.moldGroup = new THREE.Group(); this.moldGroup.position.set(0, 0.35, 0); this.moldGroup.visible = false; this.group.add(this.moldGroup);
         const moldShell = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.18, 32, 1, true), steelMat); moldShell.material.side = THREE.DoubleSide; moldShell.castShadow = true; this.moldGroup.add(moldShell);
+        
+        // Specimen Size: ~152 mm dia x 116 mm height
         const soil = new THREE.Mesh(new THREE.CylinderGeometry(0.078, 0.078, 0.17, 32), soilMat); this.moldGroup.add(soil);
         const surcharge = new THREE.Mesh(new THREE.TorusGeometry(0.05, 0.02, 16, 32), steelMat); surcharge.position.y = 0.086; surcharge.rotation.x = Math.PI/2; this.moldGroup.add(surcharge);
 
-        // Monitor
         const desk = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.6), new THREE.MeshStandardMaterial({color: 0x111})); desk.position.set(1.0, 0.4, 0.5); desk.castShadow = true; this.group.add(desk);
         const canvas = document.getElementById('cbrMonitorCanvas'); this.ctx = canvas.getContext('2d'); this.screenTexture = new THREE.CanvasTexture(canvas);
         const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 0.6), new THREE.MeshBasicMaterial({ map: this.screenTexture })); screen.position.set(1.0, 1.15, 0.5); screen.rotation.y = -Math.PI / 6; screen.userData.isCBRMonitor = true; this.group.add(screen);
@@ -61,7 +60,6 @@ class CBRStation {
         this.ctx.fillStyle = '#ffffff'; this.ctx.font = 'bold 18px Arial'; this.ctx.textAlign = 'left'; this.ctx.fillText('CALIFORNIA BEARING RATIO (ASTM D1883)', 10, 26);
         this.ctx.fillStyle = '#dc2626'; this.ctx.fillRect(760, 0, 40, 40); this.ctx.fillStyle = '#fff'; this.ctx.textAlign = 'center'; this.ctx.fillText('X', 780, 26);
 
-        // GRAPH AREA
         const gx = 80, gy = 520, gw = 450, gh = 400;
         this.ctx.strokeStyle = '#475569'; this.ctx.lineWidth = 2; this.ctx.beginPath(); this.ctx.moveTo(gx, gy-gh); this.ctx.lineTo(gx, gy); this.ctx.lineTo(gx+gw, gy); this.ctx.stroke();
         
@@ -72,7 +70,6 @@ class CBRStation {
         this.ctx.fillText('Penetration (mm)', gx + gw/2, gy + 40);
         this.ctx.save(); this.ctx.translate(30, gy-200); this.ctx.rotate(-Math.PI/2); this.ctx.fillText('Load (kN)', 0, 0); this.ctx.restore();
 
-        // PLOT DATA
         if (this.state.dataPoints.length > 0) {
             this.ctx.strokeStyle = '#38bdf8'; this.ctx.lineWidth = 3; this.ctx.beginPath();
             this.state.dataPoints.forEach((pt, i) => {
@@ -84,7 +81,6 @@ class CBRStation {
             this.ctx.fillStyle = '#fff'; this.ctx.beginPath(); this.ctx.arc(gx + (last.pen/10)*gw, gy - (last.load/20)*gh, 5, 0, Math.PI*2); this.ctx.fill();
         }
 
-        // METRICS PANEL
         this.ctx.fillStyle = '#1e293b'; this.ctx.fillRect(550, 60, 230, 460);
         this.ctx.fillStyle = '#2563eb'; this.ctx.fillRect(550, 60, 230, 40);
         this.ctx.fillStyle = '#fff'; this.ctx.font = 'bold 16px Arial'; this.ctx.fillText('LIVE DATA', 665, 86);
@@ -144,14 +140,13 @@ class CBRStation {
 
     update(delta) {
         if (this.state.phase === 'running') {
-            this.platen.position.y += 0.05 * delta; // Platen moves up
+            this.platen.position.y += 0.05 * delta; 
             this.moldGroup.position.y += 0.05 * delta;
             
-            // Piston engages at y = 0.7
             if (this.moldGroup.position.y > 0.6) {
-                this.state.penetration += 1.27 * delta; // 1.27 mm/min standard rate (accelerated for sim)
+                // ASTM D1883 Penetration Rate: 1.27 mm/min
+                this.state.penetration += 1.27 * delta; 
                 
-                // Simulated typical soil curve (Polynomial)
                 const p = this.state.penetration;
                 this.state.load = (1.5 * p) - (0.05 * p * p) + (Math.random()*0.1); 
                 
@@ -160,7 +155,8 @@ class CBRStation {
 
             if(this.osState === 'software') this.drawMonitor(false);
 
-            if (this.state.penetration >= 10.0) { // Stop at 10mm penetration
+            // ASTM D1883 Test Termination: >10.0mm
+            if (this.state.penetration >= 10.0) { 
                 this.state.phase = 'done';
                 if(this.osState === 'software') this.drawMonitor(true);
             }

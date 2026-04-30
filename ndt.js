@@ -33,7 +33,7 @@ class NDTStation {
     injectExtendedUI() {
         const ndtUI = document.getElementById('ndtUI');
         
-        // Auto-Inject GPR Card
+        // ASTM D4748
         if(ndtUI && !document.getElementById('btnGPR')) {
             const gprCard = document.createElement('div');
             gprCard.className = 'ndt-method-card';
@@ -46,7 +46,6 @@ class NDTStation {
             ndtUI.appendChild(gprCard);
         }
 
-        // Auto-Inject X-Ray Debug Card
         if(ndtUI && !document.getElementById('btnXRay')) {
             const xrayCard = document.createElement('div');
             xrayCard.className = 'ndt-method-card';
@@ -67,11 +66,9 @@ class NDTStation {
         const upvMat = new THREE.MeshPhysicalMaterial({ color: 0x0ea5e9, metalness: 0.4, roughness: 0.3, clearcoat: 0.5 });
         const gprMat = new THREE.MeshPhysicalMaterial({ color: 0xa855f7, metalness: 0.2, roughness: 0.5, clearcoat: 0.2 });
 
-        // Global Materials for Specimens (Allows X-Ray toggling)
         this.concreteMat = new THREE.MeshPhysicalMaterial({ map: createNoiseTexture('#64748b'), roughness: 0.9, metalness: 0.1 });
         this.rebarMat = new THREE.MeshPhysicalMaterial({ color: 0x334155, metalness: 0.9, roughness: 0.3 });
 
-        // 1. Heavy Workbench
         const desk = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.9, 1.8), deskMat);
         desk.position.y = 0.45; desk.castShadow = true; this.group.add(desk);
 
@@ -98,7 +95,7 @@ class NDTStation {
         display.userData.isNDTMonitor = true; 
         monitorGroup.add(display);
 
-        // 2. Transducers (UPV)
+        // ASTM C597
         this.transL = new THREE.Group(); this.group.add(this.transL);
         const bodyL = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.08), new THREE.MeshPhysicalMaterial({ color: 0x111111, roughness: 0.7 }));
         bodyL.rotation.z = Math.PI/2; this.transL.add(bodyL);
@@ -111,7 +108,7 @@ class NDTStation {
         const contactR = contactL.clone(); contactR.position.x = -0.04; this.transR.add(contactR);
         this.transR.position.set(0.2, 0.95, -0.2);
 
-        // 3. Schmidt Hammer
+        // ASTM C805
         this.hammer = new THREE.Group(); this.group.add(this.hammer);
         const hBody = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.25), new THREE.MeshStandardMaterial({color: 0xfacc15}));
         hBody.rotation.x = Math.PI/2; this.hammer.add(hBody);
@@ -119,7 +116,6 @@ class NDTStation {
         this.plunger.position.z = 0.13; this.hammer.add(this.plunger);
         this.hammer.position.set(0.8, 0.92, 0.5);
 
-        // 4. GPR Scanner Device
         this.gprScanner = new THREE.Group(); this.group.add(this.gprScanner);
         const gprBody = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.08, 0.12), gprMat);
         gprBody.position.y = 0.04; this.gprScanner.add(gprBody);
@@ -127,13 +123,11 @@ class NDTStation {
         gprHandle.rotation.x = Math.PI/2; gprHandle.position.set(0, 0.1, 0); this.gprScanner.add(gprHandle);
         this.gprScanner.position.set(0.5, 0.9, 0.5);
 
-        // Specimen Testing Area
         this.specimenGroup = new THREE.Group();
         this.group.add(this.specimenGroup);
         
         this.loadStandardSpecimen('beam_rebar');
 
-        // Dust Particle System
         this.particleMat = new THREE.MeshStandardMaterial({color: 0x94a3b8, transparent: true, opacity: 0.8});
         this.dustMesh = new THREE.InstancedMesh(new THREE.SphereGeometry(0.005, 8, 8), this.particleMat, 20);
         this.group.add(this.dustMesh);
@@ -147,26 +141,29 @@ class NDTStation {
         this.state.reboundReadings = []; this.state.upvTimeMicrosec = 0;
 
         if (type === 'beam_rebar') {
+            // Beam: 800 x 200 x 200 mm
             const beam = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.2, 0.2), this.concreteMat);
             beam.position.set(0.2, 1.0, 0); beam.castShadow = true; this.specimenGroup.add(beam);
             
+            // Rebar: 12 mm dia
             for (let i = 0; i < 4; i++) {
                 const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.78), this.rebarMat);
                 bar.rotation.z = Math.PI/2;
                 bar.position.set(0.2, 1.0 + (i<2?0.06:-0.06), (i%2===0?0.06:-0.06));
                 this.specimenGroup.add(bar);
             }
+            // Stirrups: 8 mm dia @ 100mm spacing
             for (let i = -0.35; i <= 0.35; i += 0.1) {
                 const stirrup = new THREE.Mesh(new THREE.BoxGeometry(0.004, 0.14, 0.14), this.rebarMat);
                 stirrup.position.set(0.2 + i, 1.0, 0); this.specimenGroup.add(stirrup);
             }
             this.state.actualStrengthMpa = 35;
         } else if (type === 'column') {
-            // FIXED COLUMN: Now placed properly on the desk with a heavy 6-bar cage
+            // Column: 800 x 250 x 250 mm
             const col = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.25, 0.25), this.concreteMat);
             col.position.set(0.2, 1.025, 0); col.castShadow = true; this.specimenGroup.add(col);
             
-            // 6 Longitudinal bars
+            // Rebar: 16 mm dia
             const offsets = [
                 {y: 0.08, z: 0.08}, {y: 0.08, z: 0}, {y: 0.08, z: -0.08},
                 {y: -0.08, z: 0.08}, {y: -0.08, z: 0}, {y: -0.08, z: -0.08}
@@ -178,7 +175,7 @@ class NDTStation {
                 this.specimenGroup.add(bar);
             });
             
-            // Tighter Stirrups for Column
+            // Stirrups: 8 mm dia @ 80mm spacing
             for (let i = -0.35; i <= 0.35; i += 0.08) {
                 const stirrup = new THREE.Mesh(new THREE.BoxGeometry(0.004, 0.18, 0.18), this.rebarMat);
                 stirrup.position.set(0.2 + i, 1.025, 0); this.specimenGroup.add(stirrup);
@@ -193,6 +190,7 @@ class NDTStation {
         this.state.targetSpecimen = mix.id;
         this.state.actualStrengthMpa = mix.currentFc || 30;
 
+        // Cylinder: 150 x 300 mm | Cube: 150 x 150 x 150 mm
         const isCyl = mix.type === 'cylinder';
         const mesh = new THREE.Mesh(isCyl ? new THREE.CylinderGeometry(0.075, 0.075, 0.3, 32) : new THREE.BoxGeometry(0.15, 0.15, 0.15), this.concreteMat);
         mesh.position.set(0.4, isCyl ? 0.6 : 0.525, 0); mesh.castShadow = true;
@@ -203,7 +201,6 @@ class NDTStation {
         if (this.state.targetSpecimen === 'beam_rebar') {
             return { hitY: 1.1, hitX: 0.2, hitZ: 0, w: 0.2, h: 0.2, hamRot: [Math.PI/2, 0, 0], gprY: 1.1, gprStartX: -0.2, gprEndX: 0.6 };
         } else if (this.state.targetSpecimen === 'column') {
-            // Updated mapping for the new column position
             return { hitY: 1.15, hitX: 0.2, hitZ: 0, w: 0.25, h: 0.25, hamRot: [Math.PI/2, 0, 0], gprY: 1.15, gprStartX: -0.2, gprEndX: 0.6 };
         } else {
             return { hitY: 0.6, hitX: 0.4, hitZ: 0, w: 0.15, h: 0.15, hamRot: [Math.PI/2, 0, 0] };
@@ -310,11 +307,12 @@ class NDTStation {
             setTimeout(() => {
                 this.state.upvSignalActive = false;
                 
+                // ASTM C597 Velocity Reference
                 let velocity = 4200; 
                 if (this.state.targetSpecimen === 'beam_rebar' && Math.abs(coords.hitZ) < 0.08) {
-                    velocity = 4800; // Steel influence
+                    velocity = 4800;
                 } else if (this.state.targetSpecimen === 'column') {
-                    velocity = 5000; // Heavy steel influence
+                    velocity = 5000;
                 }
                 
                 this.state.upvTimeMicrosec = ( (coords.w / (velocity/1000000)) + (Math.random()*1.5) ).toFixed(1);
@@ -439,7 +437,6 @@ class NDTStation {
             }
             
             if (this.state.gprProgress > 0) {
-                // Dynamically map stirrups based on the active specimen
                 let stirrups = [];
                 if (this.state.targetSpecimen === 'beam_rebar') stirrups = [-0.35, -0.25, -0.15, -0.05, 0.05, 0.15, 0.25, 0.35];
                 else if (this.state.targetSpecimen === 'column') {
